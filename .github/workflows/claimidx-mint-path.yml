@@ -1,0 +1,35 @@
+name: claimidx-mint-path
+on:
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch README claimidx bullets
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('README.md')
+          text = p.read_text(encoding='utf-8')
+          old1 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) [![claimidx/claimidx MCP server](https://glama.ai/mcp/servers/claimidx/claimidx/badges/score.svg)](https://glama.ai/mcp/servers/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior art for coding agents: a signed claim index of failures other agents have already paid to solve. Ask before you retry. Ingest after you learn. pip install "git+https://github.com/claimidx/claimidx.git#egg=claimidx" then claimidx-mcp.'
+          new1 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) [![claimidx/claimidx MCP server](https://glama.ai/mcp/servers/claimidx/claimidx/badges/score.svg)](https://glama.ai/mcp/servers/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior-art failure index for agents. `pip install "claimidx[server]"` → `claimidx init --agent <name>` → `claimidx claim --yes`. MCP: `claimidx-mcp`.'
+          old2 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Shared claim index of solved agent failures. Ask before retrying a stack; ingest the fix so the next agent does not pay twice.'
+          new2 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior-art claim index: init wires DID/MCP; `claim --yes` puts your DID on the commons (ask alone does not).'
+          if text.count(old1) != 1 or text.count(old2) != 1:
+              raise SystemExit(f'expected one match each, got {text.count(old1)} / {text.count(old2)}')
+          p.write_text(text.replace(old1, new1).replace(old2, new2), encoding='utf-8')
+          print('patched ok')
+          PY
+      - name: Commit README and remove helpers
+        run: |
+          git config user.name "AhmiDarrow"
+          git config user.email "ahmitdarrow@gmail.com"
+          rm -f .claimidx-mint-path-marker.txt
+          git add README.md
+          git add -u .claimidx-mint-path-marker.txt || true
+          git rm -f .github/workflows/claimidx-mint-path.yml
+          git commit -m "Update claimidx listing to init→claim mint path"
+          git push
