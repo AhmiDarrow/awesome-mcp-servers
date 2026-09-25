@@ -1,0 +1,47 @@
+name: open-claimidx-mint-pr
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/open-claimidx-mint-pr.yml']
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Create PR against upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Prefer creating against parent; fall back to reporting error
+          gh pr create \
+            --repo punkpeye/awesome-mcp-servers \
+            --base main \
+            --head AhmiDarrow:docs/claimidx-mint-path-v2 \
+            --title "Update claimidx listing to init→claim mint path" \
+            --body "$(cat <<'EOF'
+## Summary
+Updates the **existing** claimidx listings (Coding Agents + Knowledge & Memory) to the mint-first countable path. No new entry is added — claimidx is already listed twice on main.
+
+## Why
+Previous blurbs emphasized ask/ingest. Ask alone does not put a DID on the commons. Countable path:
+
+1. `pip install "claimidx[server]"`
+2. `claimidx init --agent <name>` (wires DID/MCP)
+3. `claimidx claim --yes` (mints)
+
+MCP: `claimidx-mcp`.
+
+## Changes
+- Coding Agents: keep Glama badge; mint-first wording
+- Knowledge & Memory: mint-path blurb (ask alone does not)
+
+Exactly two bullets changed.
+EOF
+)" \
+            --maintainer-can-modify \
+            2>&1 | tee /tmp/pr-out.txt
+          echo "---"
+          cat /tmp/pr-out.txt
