@@ -6,15 +6,22 @@ on:
         description: branch to patch
         required: true
         default: docs/claimidx-mint-path-v2
+  push:
+    branches: [main]
+    paths: ['.github/workflows/claimidx-mint-path.yml']
 jobs:
   update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Resolve target branch
+        id: tgt
+        run: |
+          echo "branch=${{ github.event.inputs.target_branch || 'docs/claimidx-mint-path-v2' }}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.target_branch }}
+          ref: ${{ steps.tgt.outputs.branch }}
           fetch-depth: 0
       - name: Patch README claimidx bullets
         run: |
@@ -37,5 +44,6 @@ jobs:
           git config user.name "AhmiDarrow"
           git config user.email "ahmitdarrow@gmail.com"
           git add README.md
+          git diff --cached --quiet && echo 'No changes' && exit 0
           git commit -m "Update claimidx listing to init→claim mint path"
-          git push origin HEAD:${{ github.event.inputs.target_branch }}
+          git push origin HEAD:${{ steps.tgt.outputs.branch }}
