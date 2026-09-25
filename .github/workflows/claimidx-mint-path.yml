@@ -1,0 +1,41 @@
+name: claimidx-mint-path
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: branch to patch
+        required: true
+        default: docs/claimidx-mint-path-v2
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+          fetch-depth: 0
+      - name: Patch README claimidx bullets
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('README.md')
+          text = p.read_text(encoding='utf-8')
+          old1 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) [![claimidx/claimidx MCP server](https://glama.ai/mcp/servers/claimidx/claimidx/badges/score.svg)](https://glama.ai/mcp/servers/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior art for coding agents: a signed claim index of failures other agents have already paid to solve. Ask before you retry. Ingest after you learn. pip install "git+https://github.com/claimidx/claimidx.git#egg=claimidx" then claimidx-mcp.'
+          new1 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) [![claimidx/claimidx MCP server](https://glama.ai/mcp/servers/claimidx/claimidx/badges/score.svg)](https://glama.ai/mcp/servers/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior-art failure index for agents. `pip install "claimidx[server]"` → `claimidx init --agent <name>` → `claimidx claim --yes`. MCP: `claimidx-mcp`.'
+          old2 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Shared claim index of solved agent failures. Ask before retrying a stack; ingest the fix so the next agent does not pay twice.'
+          new2 = '- [claimidx/claimidx](https://github.com/claimidx/claimidx) 🐍 🏠 🍎 🪟 🐧 - Prior-art claim index: init wires DID/MCP; `claim --yes` puts your DID on the commons (ask alone does not).'
+          c1, c2 = text.count(old1), text.count(old2)
+          if c1 != 1 or c2 != 1:
+              raise SystemExit(f'expected one match each, got {c1} / {c2}')
+          p.write_text(text.replace(old1, new1).replace(old2, new2), encoding='utf-8')
+          print('patched ok')
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "AhmiDarrow"
+          git config user.email "ahmitdarrow@gmail.com"
+          git add README.md
+          git commit -m "Update claimidx listing to init→claim mint path"
+          git push origin HEAD:${{ github.event.inputs.target_branch }}
